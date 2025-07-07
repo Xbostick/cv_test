@@ -226,8 +226,7 @@ def process_video(
     frame_queue=None,
     stop_signal=None,
     verbose: int = 1,
-    save_signals: bool = True,
-    mode: str = 'signals'
+    save_signals: bool = True
 ):
     """
     Process video to detect cars and control barriers.
@@ -239,18 +238,9 @@ def process_video(
         stop_signal: Signal to stop processing
         verbose: Verbosity level
         save_signals: Whether to save signal images
-        mode: Operation mode ('signals' or 'auto')
     """
     frame_cars_left = 0
     frame_cars_right = 0
-    frame_passing_cars_left = 0
-    frame_passing_cars_right = 0
-    signals_right = 0
-    signals_left = 0
-    left_timer = 0
-    right_timer = 0
-    barrier_delay = 5
-
 
     data = LoadImages(path, verbose = verbose > 1)
     model = YOLO("yolov5su.pt", verbose=verbose > 1)
@@ -259,38 +249,43 @@ def process_video(
         frame_cars_left = max(0,frame_cars_left - 1)
         frame_cars_right = max(0,frame_cars_right - 1)
 
-        predictions = model.predict(img, classes = [2,7,3], conf = 0.25,  verbose= verbose > 1)
+        predictions = model.predict(img, classes = [2,7,3], conf = 0.25,  verbose= verbose > 1, device = 'cpu')
 
         for pred in predictions:
             if len(pred.boxes.cls):
                 for rec in pred.boxes.xyxy:
                     rec = rec.cpu().numpy().astype(int)
                     left_cross,rect_points,poly_points = check_cross(img,rec, SIDE_BOUNDS[0], need_points=True)
-                    rect_points = rect_points + [rect_points[0]]      
-                    poly_points = poly_points + [poly_points[0]]
-                    if verbose > 3:             
+                    
+                    if verbose > 3:
+                        rect_points = rect_points + [rect_points[0]]      
+                        poly_points = poly_points + [poly_points[0]]             
                         for p in range(4):
                             cv2.line(img,(rect_points[p].x,rect_points[p].y), (rect_points[p+1].x, rect_points[p+1].y), (70*p, 0, 255 - 70*p), 20)
                             cv2.line(img,(poly_points[p].x,poly_points[p].y), (poly_points[p+1].x, poly_points[p+1].y), (70*p,0,255 - 70*p), 20)
 
                     right_cross,rect_points,poly_points = check_cross(img,rec, SIDE_BOUNDS[1], need_points=True)
-                    rect_points = rect_points + [rect_points[0]]      
-                    poly_points = poly_points + [poly_points[0]]  
-                    if verbose > 3:           
+                    
+                    if verbose > 3:   
+                        rect_points = rect_points + [rect_points[0]]      
+                        poly_points = poly_points + [poly_points[0]]          
                         for p in range(4):
                             cv2.line(img,(rect_points[p].x,rect_points[p].y), (rect_points[p+1].x, rect_points[p+1].y), (70*p, 0, 255 - 70*p), 20)
                             cv2.line(img,(poly_points[p].x,poly_points[p].y), (poly_points[p+1].x, poly_points[p+1].y), (70*p,0,255 - 70*p), 20)
 
                     if ((right_cross >= 3) and (left_cross < right_cross)) or check_cross(img,rec, SIDE_BOUNDS[1], 'br'): 
                         frame_cars_right = min(15,frame_cars_right + 2)
+
                         if verbose:
                             cv2.putText(img, f"Car rightside", (rec[2],rec[1]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                             cv2.rectangle(img,rec[0:2],rec[2:4], (0,255,0),5)
                         if verbose >= 2:
                             cv2.putText(img, f"Car right cross {right_cross}", (rec[2],rec[1]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                             cv2.putText(img, f"Car left cross {left_cross}", (rec[2],rec[1]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+
                     elif  left_cross >= 3 or check_cross(img,rec, SIDE_BOUNDS[0], 'bl'):
                         frame_cars_left = min(15,frame_cars_left + 2)
+
                         if verbose:
                             cv2.putText(img, f"Car leftside", (rec[2],rec[1]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                             cv2.rectangle(img,rec[0:2],rec[2:4], (0,255,0),5)
@@ -298,81 +293,32 @@ def process_video(
                             cv2.putText(img, f"Car right cross {right_cross}", (rec[2],rec[1]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                             cv2.putText(img, f"Car left cross {left_cross}", (rec[2],rec[1]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
 
-                    if mode == 'auto':
+                    if verbose > 1:
                         for ind, bound_check in enumerate(PASSING_BOUNDS):
                             if check_cross(img,rec, bound_check) > 4:
                                 if ind == 1:
-                                        frame_passing_cars_right +=1
-                                        if verbose:
                                             cv2.putText(img, "Passing car rightside", (rec[2],rec[1]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                                             cv2.rectangle(img,rec[0:2],rec[2:4], (0,255,200),5)
                                 elif ind == 0:
-                                    frame_passing_cars_left +=1
-                                    if verbose:
                                         cv2.putText(img, "Passing car leftside", (rec[2],rec[1]-1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                                         cv2.rectangle(img,rec[0:2],rec[2:4], (0,255,200),5)                            
             
-            if verbose > 1:
-                for bound in SIDE_BOUNDS:
-                    cv2.polylines(img,[np.int32(bound)], True,(0,255,0))
-                for bound in PASSING_BOUNDS:
-                    cv2.polylines(img,[np.int32(bound)], True,(0,255,200))
+        
+        if verbose: 
+            cv2.putText(img, f"Model Yolov5_su",(100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
+            cv2.putText(img, f"Is_car_leftside = {frame_cars_left > 10}, is car rightside = {frame_cars_right > 10}",(1800,200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
+        if verbose > 1:
+            cv2.putText(img, f"Left_frames = {frame_cars_left}, Right_frames = {frame_cars_right}", (1800,50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
 
-        if mode == 'signals':
-            if verbose: 
-                cv2.putText(img, f"Model Yolov5_su",(100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
-                cv2.putText(img, f"Is_car_leftside = {frame_cars_left > 10}, is car rightside = {frame_cars_right > 10}",(1800,200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
-            if verbose > 1:
-                cv2.putText(img, f"Left_frames = {frame_cars_left}, Right_frames = {frame_cars_right}", (1800,50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
-                
+        if verbose > 1:
+            for bound in SIDE_BOUNDS:
+                cv2.polylines(img,[np.int32(bound)], True,(0,255,0))
+            for bound in PASSING_BOUNDS:
+                cv2.polylines(img,[np.int32(bound)], True,(0,255,200))
+
+        if state_shared_memory:
             state_shared_memory[0] = int(frame_cars_left > 10)
             state_shared_memory[1] = int(frame_cars_right > 10)
-        
-
-        if mode == "auto":
-            # Если машина подьезжает - открываем
-            if frame_cars_left > 10:
-                signals_left += 1
-                cv2.imwrite(f"./photos/signal_left_{signals_left}.jpg", img)
-                LEFT_BARRIER.state = BARRIER_STATE['open']
-                left_timer = time.time()
-            if frame_cars_right > 10:
-                signals_right += 1
-                cv2.imwrite(f"./photos/signal_right_{signals_right}.jpg", img)
-                LEFT_BARRIER.state = BARRIER_STATE['open']
-                right_timer = time.time()
-
-            # Если машина в статусе проезжает(passing), но стоит долго, а шлагбаум закрыт - поднимаем
-            if frame_passing_cars_left > 50 and LEFT_BARRIER.state == BARRIER_STATE['close']:
-                signals_left += 1
-                if save_signals:
-                    cv2.imwrite(f"./photos/signal_left_{signals_left}.jpg", img)
-                frame_passing_cars_left = 0
-                LEFT_BARRIER.state = BARRIER_STATE['open']
-                left_timer = time.time()
-            if frame_passing_cars_right > 50 and RIGHT_BARRIER.state == BARRIER_STATE['close']:
-                signals_right += 1
-                if save_signals:
-                    cv2.imwrite(f"./photos/signal_right_{signals_right}.jpg", img)
-                frame_passing_cars_right = 0
-                RIGHT_BARRIER.state = BARRIER_STATE['open']
-                right_timer = time.time()
-            
-            # Если истек таймер и проезжающих машин нет - закрываем шлагбаум
-
-            if time.time() - left_timer > barrier_delay:
-                left_timer = 0
-                LEFT_BARRIER.state = BARRIER_STATE['close']
-            if time.time() - right_timer  > barrier_delay:
-                right_timer = 0
-                RIGHT_BARRIER.state = BARRIER_STATE['close']
-
-            LEFT_BARRIER.show(img)
-            RIGHT_BARRIER.show(img)
-
-            if state_shared_memory:
-                state_shared_memory[0] = LEFT_BARRIER.state 
-                state_shared_memory[1] = RIGHT_BARRIER.state
         
             
         if frame_queue:
@@ -386,4 +332,4 @@ def process_video(
 
 
 if __name__ == "__main__":
-    process_video("cvtest.avi", mode= "auto")
+    process_video("cvtest.avi", verbose = 3)

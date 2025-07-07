@@ -1,8 +1,9 @@
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Video</title>
+    <title>Video Processing Complete</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,42 +17,41 @@
         }
         h1 {
             color: #333;
-            margin-bottom: 20px;
         }
         p {
             color: #555;
             font-size: 1.1em;
             margin-bottom: 20px;
         }
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        input[type="file"] {
-            margin-bottom: 20px;
-            font-size: 1em;
-        }
-        input[type="submit"] {
+        .button {
             padding: 10px 20px;
+            margin: 10px;
             font-size: 1em;
             color: #fff;
             background-color: #007bff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
         }
-        input[type="submit"]:hover {
+        .button:hover {
             background-color: #0056b3;
+        }
+        .button.stop {
+            background-color: #dc3545;
+        }
+        .button.stop:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
 <body>
-    <h1>Upload Video</h1>
-    <p>Select a video file to process for car detection.</p>
-    <form action="/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".avi" required>
-        <input type="submit" value="Upload and Process">
-    </form>
+    <h1>Video Processing Right Now</h1>
+    <p>The JSON state of car detection can be requested at the <a href="/state">/state</a> route.</p>
+    <div>
+        <a href="/video" class="button">Watch Video Feed</a>
+        <a href="/stop" class="button stop">Stop Processing</a>
+    </div>
 </body>
 </html>

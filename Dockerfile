@@ -21,7 +21,6 @@ RUN mkdir -p /app/files /app/photos
 COPY server.py .
 COPY cv_detect.py .
 COPY templates/ ./templates/
-COPY files/ ./files/
 
 
 # Expose the port the Flask app runs on

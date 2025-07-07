@@ -1,0 +1,57 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Processing Complete</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            color: #555;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.stop {
+            background-color: #dc3545;
+        }
+        .button.stop:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Processing Right Now</h1>
+    <p>The JSON state of car detection can be requested at the <a href="/state">/state</a> route.</p>
+    <div>
+        <a href="/video" class="button">Watch Video Feed</a>
+        <a href="/stop" class="button stop">Stop Processing</a>
+    </div>
+</body>
+</html>

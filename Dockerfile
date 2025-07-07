@@ -6,10 +6,10 @@ WORKDIR /app
 
 # Install system dependencies for OpenCV and other libraries
 RUN apt update && \
-    apt upgrade -y
+    apt upgrade && apt-get install ffmpeg libsm6 libxext6  -y -y
 
 # Copy the requirements file into the container
-COPY requirements.txt .
+COPY d .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
